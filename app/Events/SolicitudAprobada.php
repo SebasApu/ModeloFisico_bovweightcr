@@ -22,5 +22,6 @@ class SolicitudAprobada
     public function __construct(
         public readonly SolicitudRegistro $solicitud,
         public readonly User $usuario,
+        public readonly string $contrasenaPlana,
     ) {}
 }

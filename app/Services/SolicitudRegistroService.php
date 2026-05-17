@@ -106,14 +106,16 @@ class SolicitudRegistroService
         $this->solicitudes->save($solicitud);
 
         // FACTORY: crea el usuario con el tipo indicado por el admin
+        $contrasenaPlana = Str::random(12);
+
         $usuario = $this->userFactory->make($tipoUsuario, [
             'nombre' => $solicitud->nombre.' '.$solicitud->apellidos,
             'correo' => $solicitud->correo,
-            'contrasena' => Str::random(12),
+            'contrasena' => $contrasenaPlana,
         ]);
 
-        // OBSERVER: notifica aprobación (correo con credenciales, etc.)
-        SolicitudAprobada::dispatch($solicitud, $usuario);
+        // OBSERVER: notifica aprobación enviando credenciales por correo
+        SolicitudAprobada::dispatch($solicitud, $usuario, $contrasenaPlana);
 
         return $solicitud->fresh('estado');
     }

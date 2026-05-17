@@ -14,6 +14,7 @@ use App\Listeners\NotificarBienvenidaUsuario;
 use App\Listeners\NotificarRechazoSolicitud;
 use App\Repositories\EloquentSolicitudRegistroRepository;
 use App\Repositories\EloquentUserRepository;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -49,5 +50,15 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(SolicitudAprobada::class, NotificarAprobacionSolicitud::class);
         Event::listen(SolicitudRechazada::class, NotificarRechazoSolicitud::class);
         Event::listen(UsuarioCreado::class, NotificarBienvenidaUsuario::class);
+
+        // Como el proyecto es API-only no existe la ruta nombrada 'password.reset'.
+        // Se genera la URL apuntando al frontend configurado en FRONTEND_URL,
+        // o a APP_URL como fallback durante el desarrollo.
+        ResetPassword::createUrlUsing(function ($notifiable, string $token) {
+            $base = rtrim(config('app.frontend_url', config('app.url')), '/');
+
+            return $base.'/reset-password/'.$token
+                .'?correo='.urlencode($notifiable->getEmailForPasswordReset());
+        });
     }
 }

@@ -61,7 +61,7 @@ class AuthService
             return;
         }
 
-        Password::broker()->sendResetLink(['email' => $correo]);
+        Password::broker()->sendResetLink(['correo' => $correo]);
     }
 
     /**
@@ -72,7 +72,7 @@ class AuthService
     public function resetearContrasena(string $correo, string $token, string $nuevaContrasena): void
     {
         $estado = Password::broker()->reset(
-            ['email' => $correo, 'password' => $nuevaContrasena, 'password_confirmation' => $nuevaContrasena, 'token' => $token],
+            ['correo' => $correo, 'password' => $nuevaContrasena, 'password_confirmation' => $nuevaContrasena, 'token' => $token],
             function ($usuario, $contrasena) {
                 $usuario->contrasena = $contrasena;
                 $usuario->save();

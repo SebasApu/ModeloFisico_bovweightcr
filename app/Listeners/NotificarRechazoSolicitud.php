@@ -3,8 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\SolicitudRechazada;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
+use App\Mail\RechazoSolicitudMail;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * PATRÓN OBSERVER — ConcreteObserver
@@ -13,17 +13,14 @@ use Illuminate\Support\Facades\Log;
  * el motivo del rechazo. Agregar más observers (SMS, webhook) no
  * requiere modificar ni el evento ni este listener (OCP).
  */
-class NotificarRechazoSolicitud implements ShouldQueue
+class NotificarRechazoSolicitud
 {
     public function handle(SolicitudRechazada $event): void
     {
-        $solicitud = $event->solicitud;
-
-        Log::info('Solicitud rechazada: notificando al solicitante.', [
-            'correo' => $solicitud->correo,
-            'motivo' => $event->motivoRechazo,
-        ]);
-
-        // Mail::to($solicitud->correo)->send(new RechazoMail($event->motivoRechazo));
+        Mail::to($event->solicitud->correo)
+            ->send(new RechazoSolicitudMail(
+                $event->solicitud,
+                $event->motivoRechazo,
+            ));
     }
 }
