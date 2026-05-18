@@ -3,15 +3,19 @@
 namespace App\Providers;
 
 use App\Contracts\ISolicitudRegistroRepository;
+use App\Contracts\IFincaFactory;
+use App\Contracts\IFincaRepository;
 use App\Contracts\IUserFactory;
 use App\Contracts\IUserRepository;
 use App\Events\SolicitudAprobada;
 use App\Events\SolicitudRechazada;
 use App\Events\UsuarioCreado;
 use App\Factories\UserFactory;
+use App\Factories\FincaFactory;
 use App\Listeners\NotificarAprobacionSolicitud;
 use App\Listeners\NotificarBienvenidaUsuario;
 use App\Listeners\NotificarRechazoSolicitud;
+use App\Repositories\EloquentFincaRepository;
 use App\Repositories\EloquentSolicitudRegistroRepository;
 use App\Repositories\EloquentUserRepository;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -35,9 +39,11 @@ class AppServiceProvider extends ServiceProvider
         // Repository bindings
         $this->app->bind(IUserRepository::class, EloquentUserRepository::class);
         $this->app->bind(ISolicitudRegistroRepository::class, EloquentSolicitudRegistroRepository::class);
+        $this->app->bind(IFincaRepository::class, EloquentFincaRepository::class);
 
         // Factory binding (singleton: se crea una sola instancia)
         $this->app->singleton(IUserFactory::class, UserFactory::class);
+        $this->app->singleton(IFincaFactory::class, FincaFactory::class);
     }
 
     /**

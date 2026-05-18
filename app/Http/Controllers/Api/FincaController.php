@@ -4,31 +4,25 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Finca;
+use App\Services\FincaService;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class FincaController extends Controller
 {
+    public function __construct(
+        private readonly FincaService $fincaService,
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-       
-       $user = auth()->user();
+        $fincas = $this->fincaService->listar(auth()->user());
 
-    // Administrador
-    if ($user->tipo_id == 1) {
-
-        $fincas = Finca::with('usuario')->get();
-
-    } else {
-
-        $fincas = Finca::with('usuario')
-            ->where('usuario_id', $user->id)
-            ->get();
-    }
-
-    return response()->json($fincas);
+        return response()->json($fincas);
     }
 
     /**
@@ -44,12 +38,16 @@ class FincaController extends Controller
         'numero_finca' => 'required|string|unique:fincas,numero_finca'
     ]);
 
-    $finca = Finca::create($validated);
+        try {
+            $finca = $this->fincaService->crear($validated);
 
-    return response()->json([
-        'message' => 'Finca registrada correctamente',
-        'data' => $finca
-    ], 201);
+            return response()->json([
+                'message' => 'Finca registrada correctamente',
+                'data' => $finca
+            ], 201);
+        } catch (ConflictHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 409);
+        }
     }
 
     /**
@@ -57,9 +55,13 @@ class FincaController extends Controller
      */
     public function show(string $id)
     {
-        $finca = Finca::with('usuario', 'ganados')->findOrFail($id);
+        try {
+            $finca = $this->fincaService->obtener((int) $id);
 
-    return response()->json($finca);
+            return response()->json($finca);
+        } catch (NotFoundHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
     }
 
     /**
@@ -67,22 +69,25 @@ class FincaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $finca = Finca::findOrFail($id);
+        $validated = $request->validate([
+            'usuario_id' => 'required|exists:users,id',
+            'nombre' => 'required|string|max:255',
+            'ubicacion' => 'required|string|max:255',
+            'area' => 'required|numeric|min:0',
+            'numero_finca' => 'required|string|unique:fincas,numero_finca,' . $id,
+        ]);
+        try {
+            $finca = $this->fincaService->actualizar((int) $id, $validated);
 
-    $validated = $request->validate([
-        'usuario_id' => 'required|exists:users,id',
-        'nombre' => 'required|string|max:255',
-        'ubicacion' => 'required|string|max:255',
-        'area' => 'required|numeric|min:0',
-        'numero_finca' => 'required|string|unique:fincas,numero_finca,' . $finca->id
-    ]);
-
-    $finca->update($validated);
-
-    return response()->json([
-        'message' => 'Finca actualizada correctamente',
-        'data' => $finca
-    ]);
+            return response()->json([
+                'message' => 'Finca actualizada correctamente',
+                'data' => $finca
+            ]);
+        } catch (NotFoundHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ConflictHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 409);
+        }
     }
 
     /**
@@ -90,18 +95,16 @@ class FincaController extends Controller
      */
     public function destroy(string $id)
     {
-        $finca = Finca::findOrFail($id);
+        try {
+            $this->fincaService->eliminar((int) $id);
 
-    if ($finca->ganados()->count() > 0) {
-        return response()->json([
-            'message' => 'No se puede eliminar la finca porque tiene ganado asociado'
-        ], 400);
-    }
-
-    $finca->delete();
-
-    return response()->json([
-        'message' => 'Finca eliminada correctamente'
-    ]);
+            return response()->json([
+                'message' => 'Finca eliminada correctamente'
+            ]);
+        } catch (NotFoundHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (BadRequestHttpException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 }
